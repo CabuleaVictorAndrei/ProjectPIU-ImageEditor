@@ -1,128 +1,132 @@
 import cv2
 from PyQt5.QtCore import Qt
 
-import ImageOperations
+from canvas import Canvas
+from imageOperations import ImageOperations
 from PyQt5.QtWidgets import QMainWindow, QAction, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QMessageBox, \
-    QFileDialog, QSlider, QComboBox, QApplication, QUndoStack, QTreeWidget, QTreeWidgetItem, QColorDialog, \
-    QListWidgetItem, QListWidget
-from PyQt5.QtGui import QPixmap, QColor, QIcon
+    QFileDialog, QSlider, QComboBox, QApplication, QSizePolicy, QColorDialog
+from PyQt5.QtGui import QPixmap, QIcon
+
+
+def showAboutDialog():
+    messageBox = QMessageBox()
+    messageBox.setWindowTitle("Help")
+    messageBox.setText(
+        "This app is an Image Editor and has been created by Căbulea Victor-Andrei and Cojocaru Rareș.")
+    messageBox.exec_()
 
 
 class UX(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.imageOperations = ImageOperations.ImageOperations()
+        self.setWindowTitle("Image Editor")
+        self.setGeometry(100, 100, 900, 900)
+
+        self.sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        # class members
+        self.canvas = Canvas()
+        self.imageOperations = ImageOperations()
+
+        self.hiddenImageOperations = 0
+        self.hiddenPainting = 0
 
         self.menubar = self.menuBar()
         self.horizontalLayout = QVBoxLayout()
 
-        self.central_widget = QWidget()
+        self.centralWidget = QWidget()
 
-        self.undoButton = QPushButton("Undo", self.central_widget)
-        self.redoButton = QPushButton("Redo", self.central_widget)
+        self.undoButton = QPushButton("Undo", self.centralWidget)
+        self.redoButton = QPushButton("Redo", self.centralWidget)
 
-        self.averageFilterButton = QPushButton("Average Filter", self.central_widget)
-        self.medianFilterButton = QPushButton("Median Filter", self.central_widget)
-        self.gaussianFilterButton = QPushButton("Gaussian Filter", self.central_widget)
-        self.grayScaleButton = QPushButton("Gray Scale", self.central_widget)
+        self.averageFilterButton = QPushButton("Average Filter", self.centralWidget)
+        self.medianFilterButton = QPushButton("Median Filter", self.centralWidget)
+        self.gaussianFilterButton = QPushButton("Gaussian Filter", self.centralWidget)
+        self.grayScaleButton = QPushButton("Gray Scale", self.centralWidget)
 
-        self.brushButton = QPushButton("Brush", self.central_widget)
-        self.sprayButton = QPushButton("Spray", self.central_widget)
-        self.penButton = QPushButton("Pen", self.central_widget)
-        self.fillButton = QPushButton("Fill", self.central_widget)
-        self.rectangleButton = QPushButton("Rectangle", self.central_widget)
-        self.circleButton = QPushButton("Circle", self.central_widget)
+        self.brushButton = QPushButton(" Brush", self.centralWidget)
+        self.sprayButton = QPushButton(" Spray", self.centralWidget)
+        self.penButton = QPushButton(" Pen", self.centralWidget)
+        self.fillButton = QPushButton(" Fill", self.centralWidget)
+        self.rectangleButton = QPushButton(" Rectangle", self.centralWidget)
+        self.circleButton = QPushButton(" Circle", self.centralWidget)
 
-        self.redColorButton = QPushButton("", self.central_widget)
-        self.greenColorButton = QPushButton("", self.central_widget)
-        self.blueColorButton = QPushButton("", self.central_widget)
-        self.yellowColorButton = QPushButton("", self.central_widget)
-        self.magentaColorButton = QPushButton("", self.central_widget)
-        self.cyanColorButton = QPushButton("", self.central_widget)
-        self.maroonColorButton = QPushButton("", self.central_widget)
-        self.darkGreenColorButton = QPushButton("", self.central_widget)
-        self.navyColorButton = QPushButton("", self.central_widget)
-        self.grayColorButton = QPushButton("", self.central_widget)
+        self.colorButton = QPushButton('Choose Color', self)
 
-        self.colorListLayout = QVBoxLayout()
+        self.canvasLayout = QVBoxLayout()
+        self.processedImageLayout = QVBoxLayout()
 
-        self.brightnessLabel = None
-        self.filterComboBoxLabel = None
+        self.canvasTextLabel = QLabel("Canvas")
+        self.canvasTextLabel.setAlignment(Qt.AlignCenter)
 
-        self.brightnessSlider = None
-        self.filterComboBox = None
+        self.colorLabel = QLabel()
+        self.widthSliderLabel = QLabel("Set Width")
 
-        self.image_label = QLabel(self.central_widget)
+        self.brightnessLabel = QLabel('Brightness Value: 0')
+        self.filterComboBoxLabel = QLabel('Filter Size')
 
-        self.main_layout = QVBoxLayout()
-        self.button_layout = QHBoxLayout()
-        self.undoRedo_button_layout = QHBoxLayout()
-        self.filter_button_layout = QHBoxLayout()
-        self.filter_size_layout = QVBoxLayout()
-        self.brightness_widgets_layout = QVBoxLayout()
+        self.brightnessSlider = QSlider(Qt.Horizontal)
+        self.widthSlider = QSlider(Qt.Horizontal)
+
+        self.filterComboBox = QComboBox(self)
+
+        self.mainLayout = QVBoxLayout()
+        self.buttonLayout = QHBoxLayout()
+        self.undoRedoButtonLayout = QHBoxLayout()
+        self.filterButtonLayout = QHBoxLayout()
+        self.filterSizeLayout = QVBoxLayout()
+        self.brightnessWidgetsLayout = QVBoxLayout()
         self.paintButtonsLayout = QVBoxLayout()
-        self.centerLayout=QHBoxLayout()
+        self.colorSettingLayout = QVBoxLayout()
+        self.widthSettingLayout = QVBoxLayout()
+        self.centerLayout = QHBoxLayout()
 
-        self.initUI()
-        self.fileMenu()
-        self.viewMenu()
-        self.helpMenu()
-
-        self.hidden = 0
-
-    def initUI(self):
-        self.setWindowTitle("Image Editor")
-        self.setGeometry(100, 100, 900, 900)
-
+        # initializations
         self.initUndoRedoButtonsAndLayout()
         self.initFilterButtonsAndLayout()
 
-        self.button_layout.addWidget(self.grayScaleButton)
+        self.buttonLayout.addWidget(self.grayScaleButton)
 
         self.initBrightnessSlider()
 
         self.initPaintWidgets()
 
-        self.main_layout.addLayout(self.button_layout)
-
-        self.paintButtonsLayout.addWidget(self.brushButton)
-        self.paintButtonsLayout.addWidget(self.sprayButton)
-        self.paintButtonsLayout.addWidget(self.penButton)
-        self.paintButtonsLayout.addWidget(self.fillButton)
-        self.paintButtonsLayout.addWidget(self.rectangleButton)
-        self.paintButtonsLayout.addWidget(self.circleButton)
-
-        self.paintButtonsLayout.addLayout(self.colorListLayout)
+        self.mainLayout.addLayout(self.buttonLayout)
 
         self.centerLayout.addLayout(self.paintButtonsLayout)
-        self.centerLayout.addWidget(self.image_label)
 
-        self.main_layout.addLayout(self.centerLayout)
+        self.canvasLayout.addWidget(self.canvasTextLabel)
+        self.canvasLayout.addWidget(self.canvas)
+        self.centerLayout.addLayout(self.canvasLayout)
 
-        self.central_widget.setLayout(self.main_layout)
+        self.mainLayout.addLayout(self.centerLayout)
 
-        self.setCentralWidget(self.central_widget)
+        self.centralWidget.setLayout(self.mainLayout)
+
+        self.setCentralWidget(self.centralWidget)
 
         self.setStyleOfWidgets()
 
         self.connectWidgets()
 
+        self.fileMenu()
+        self.viewMenu()
+        self.helpMenu()
+
     def initUndoRedoButtonsAndLayout(self):
         self.undoButton.setDisabled(True)
         self.redoButton.setDisabled(True)
 
-        self.undoRedo_button_layout.addWidget(self.undoButton)
-        self.undoRedo_button_layout.addWidget(self.redoButton)
-        self.button_layout.addLayout(self.undoRedo_button_layout)
+        self.undoRedoButtonLayout.addWidget(self.undoButton)
+        self.undoRedoButtonLayout.addWidget(self.redoButton)
+        self.buttonLayout.addLayout(self.undoRedoButtonLayout)
 
     def initFilterButtonsAndLayout(self):
-        self.filter_button_layout.addWidget(self.averageFilterButton)
-        self.filter_button_layout.addWidget(self.medianFilterButton)
-        self.filter_button_layout.addWidget(self.gaussianFilterButton)
+        self.filterButtonLayout.addWidget(self.averageFilterButton)
+        self.filterButtonLayout.addWidget(self.medianFilterButton)
+        self.filterButtonLayout.addWidget(self.gaussianFilterButton)
 
-        self.filterComboBoxLabel = QLabel('Fileter Size')
-        self.filterComboBox = QComboBox(self)
         self.filterComboBox.addItem("3")
         self.filterComboBox.addItem("5")
         self.filterComboBox.addItem("7")
@@ -131,215 +135,83 @@ class UX(QMainWindow):
         self.filterComboBox.addItem("13")
         self.filterComboBox.addItem("15")
 
-        self.filter_size_layout.addWidget(self.filterComboBoxLabel)
-        self.filter_size_layout.addWidget(self.filterComboBox)
-        self.filter_button_layout.addLayout(self.filter_size_layout)
+        self.filterSizeLayout.addWidget(self.filterComboBoxLabel)
+        self.filterSizeLayout.addWidget(self.filterComboBox)
+        self.filterButtonLayout.addLayout(self.filterSizeLayout)
 
-        self.button_layout.addLayout(self.filter_button_layout)
+        self.buttonLayout.addLayout(self.filterButtonLayout)
 
     def initBrightnessSlider(self):
-        self.brightnessSlider = QSlider(Qt.Horizontal)
         self.brightnessSlider.setMinimum(-100)
         self.brightnessSlider.setMaximum(100)
         self.brightnessSlider.setSingleStep(1)
         self.brightnessSlider.setValue(0)
-        self.brightnessLabel = QLabel('Brightness Value: 0')
 
         self.brightnessSlider.setMaximumSize(140, 20)
         self.brightnessLabel.setMaximumSize(140, 20)
 
-        self.brightness_widgets_layout.addWidget(self.brightnessLabel)
-        self.brightness_widgets_layout.addWidget(self.brightnessSlider)
+        self.brightnessWidgetsLayout.addWidget(self.brightnessLabel)
+        self.brightnessWidgetsLayout.addWidget(self.brightnessSlider)
 
-        self.button_layout.addLayout(self.brightness_widgets_layout)
-
+        self.buttonLayout.addLayout(self.brightnessWidgetsLayout)
 
     def initPaintWidgets(self):
-        self.brushButton.setFixedWidth(150)
-        self.sprayButton.setFixedWidth(150)
-        self.penButton.setFixedWidth(150)
-        self.fillButton.setFixedWidth(150)
-        self.rectangleButton.setFixedWidth(150)
-        self.circleButton.setFixedWidth(150)
+        self.setupPaintingButtons(self.brushButton, "brush.png")
+        self.setupPaintingButtons(self.sprayButton, "spray.png")
+        self.setupPaintingButtons(self.penButton, "pencil.png")
+        self.setupPaintingButtons(self.fillButton, "fill.png")
+        self.setupPaintingButtons(self.rectangleButton, "square.png")
+        self.setupPaintingButtons(self.circleButton, "circle.png")
 
-        original_pixmap = QPixmap("D:/anul 4/eu/Proiect PIU - Image Editor/icons/spray.png")
-        desired_size = (32, 32)
-        pixmap = original_pixmap.scaled(*desired_size)
+        self.colorButton.setGeometry(10, 10, 150, 30)
+        self.colorLabel.setGeometry(10, 50, 150, 150)
+        self.colorLabel.setStyleSheet("background-color: white;")
+
+        self.colorSettingLayout.addWidget(self.colorButton)
+        self.colorSettingLayout.addWidget(self.colorLabel)
+        self.paintButtonsLayout.addLayout(self.colorSettingLayout)
+
+        self.widthSlider.setRange(1, 35)
+
+        self.widthSettingLayout.addWidget(self.widthSliderLabel)
+        self.widthSettingLayout.addWidget(self.widthSlider)
+        self.paintButtonsLayout.addLayout(self.widthSettingLayout)
+
+    def setupPaintingButtons(self, button, imageName):
+        button.setFixedWidth(150)
+        originalPixmap = QPixmap(f"D:/anul 4/eu/Proiect PIU - Image Editor/icons/{imageName}")
+        desiredSize = (32, 32)
+        pixmap = originalPixmap.scaled(*desiredSize)
         icon = QIcon(pixmap)
-        self.sprayButton.setIcon(icon)
-        self.sprayButton.setIconSize(pixmap.size())
-
-        original_pixmap = QPixmap("D:/anul 4/eu/Proiect PIU - Image Editor/icons/fill.png")
-        desired_size = (32, 32)
-        pixmap = original_pixmap.scaled(*desired_size)
-        icon = QIcon(pixmap)
-        self.fillButton.setIcon(icon)
-        self.fillButton.setIconSize(pixmap.size())
-
-        original_pixmap = QPixmap("D:/anul 4/eu/Proiect PIU - Image Editor/icons/square.png")
-        desired_size = (32, 32)
-        pixmap = original_pixmap.scaled(*desired_size)
-        icon = QIcon(pixmap)
-        self.rectangleButton.setIcon(icon)
-        self.rectangleButton.setIconSize(pixmap.size())
-
-        original_pixmap = QPixmap("D:/anul 4/eu/Proiect PIU - Image Editor/icons/circle.png")
-        desired_size = (32, 32)
-        pixmap = original_pixmap.scaled(*desired_size)
-        icon = QIcon(pixmap)
-        self.circleButton.setIcon(icon)
-        self.circleButton.setIconSize(pixmap.size())
-
-
-        original_pixmap = QPixmap("D:/anul 4/eu/Proiect PIU - Image Editor/icons/brush.png")
-        desired_size = (32, 32)
-        pixmap = original_pixmap.scaled(*desired_size)
-        icon = QIcon(pixmap)
-        self.brushButton.setIcon(icon)
-        self.brushButton.setIconSize(pixmap.size())
-
-        # Red Color Button
-        self.redColorButton.setStyleSheet("QPushButton { background-color: rgb(255, 0, 0); }"
-                                          "QPushButton:hover { background-color: rgb(200, 0, 0); }")
-        self.redColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.redColorButton)
-
-        # Green Color Button
-        self.greenColorButton.setStyleSheet("QPushButton { background-color: rgb(0, 255, 0); }"
-                                            "QPushButton:hover { background-color: rgb(0, 200, 0); }")
-        self.greenColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.greenColorButton)
-
-        # Blue Color Button
-        self.blueColorButton.setStyleSheet("QPushButton { background-color: rgb(0, 0, 255); }"
-                                           "QPushButton:hover { background-color: rgb(0, 0, 200); }")
-        self.blueColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.blueColorButton)
-
-        # Yellow Color Button
-        self.yellowColorButton.setStyleSheet("QPushButton { background-color: rgb(255, 255, 0); }"
-                                             "QPushButton:hover { background-color: rgb(200, 200, 0); }")
-        self.yellowColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.yellowColorButton)
-
-        # Magenta Color Button
-        self.magentaColorButton.setStyleSheet("QPushButton { background-color: rgb(255, 0, 255); }"
-                                              "QPushButton:hover { background-color: rgb(200, 0, 200); }")
-        self.magentaColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.magentaColorButton)
-
-        # Cyan Color Button
-        self.cyanColorButton.setStyleSheet("QPushButton { background-color: rgb(0, 255, 255); }"
-                                           "QPushButton:hover { background-color: rgb(0, 200, 200); }")
-        self.cyanColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.cyanColorButton)
-
-        # Maroon Color Button
-        self.maroonColorButton.setStyleSheet("QPushButton { background-color: rgb(128, 0, 0); }"
-                                             "QPushButton:hover { background-color: rgb(100, 0, 0); }")
-        self.maroonColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.maroonColorButton)
-
-        # Dark Green Color Button
-        self.darkGreenColorButton.setStyleSheet("QPushButton { background-color: rgb(0, 128, 0); }"
-                                                "QPushButton:hover { background-color: rgb(0, 100, 0); }")
-        self.darkGreenColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.darkGreenColorButton)
-
-        # Navy Color Button
-        self.navyColorButton.setStyleSheet("QPushButton { background-color: rgb(0, 0, 128); }"
-                                           "QPushButton:hover { background-color: rgb(0, 0, 100); }")
-        self.navyColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.navyColorButton)
-
-        # Gray Color Button
-        self.grayColorButton.setStyleSheet("QPushButton { background-color: rgb(128, 128, 128); }"
-                                           "QPushButton:hover { background-color: rgb(100, 100, 100); }")
-        self.grayColorButton.setFixedWidth(50)
-        self.colorListLayout.addWidget(self.grayColorButton)
-
-
+        button.setIcon(icon)
+        button.setIconSize(pixmap.size())
+        self.paintButtonsLayout.addWidget(button)
 
     def setStyleOfWidgets(self):
         self.setStyleSheet("")
 
-        border_style = "border: 2px solid black;"
-        self.image_label.setStyleSheet(border_style)
+        borderStyle = "border: 2px solid black;"
+        self.canvas.setStyleSheet(borderStyle)
+        self.colorLabel.setStyleSheet(borderStyle)
+        self.colorLabel.setMaximumHeight(50)
+        self.widthSliderLabel.setMaximumHeight(50)
 
-        self.setStyleSheet("""
-            QMenuBar {
-                background-color: #333333;
-                color: #ffaa00;
-                border: 1px solid #000000;
-            }
+        self.canvasTextLabel.setSizePolicy(self.sizePolicy)
 
-            QMenuBar::item {
-                background-color: #333333;
-                color: #ffaa00;
-                padding: 8px 16px;
-                border-radius: 4px;
-            }
+        filePath = 'stylesheet.txt'
+        try:
+            with open(filePath, 'r') as file:
+                fileContents = file.read()
 
-            QMenuBar::item:selected {
-                background-color: #ffaa00;
-                color: #333333;
-            }
+            self.setStyleSheet(fileContents)
 
-            QMenu {
-                background-color: #333333;
-                color: #ffaa00;
-                border: 1px solid #000000;
-            }
+        except Exception as e:
+            print(f"Error reading or applying stylesheet: {e}")
 
-            QMenu::item {
-                background-color: #333333;
-                color: #ffaa00;
-                padding: 8px 16px;
-                border-radius: 4px;
-            }
+        self.filterButtonLayout.setContentsMargins(15, 10, 15, 10)
+        self.brightnessWidgetsLayout.setContentsMargins(15, 0, 15, 0)
 
-            QMenu::item:selected {
-                background-color: #ffaa00;
-                color: #333333;
-            }
-
-            QPushButton {
-                background-color: #ffaa00;
-                color: #333333;
-                border: 1px solid #000000;
-                padding: 10px 20px;
-                border-radius: 5px;
-            }
-
-            QPushButton:hover 
-                background-color: #ffcc33;
-            }
-
-            QPushButton:pressed {
-                background-color: #cc8800;
-            }
-
-            QSlider::groove:horizontal {
-                background: #555555;
-                height: 5px;
-            }
-
-            QSlider::handle:horizontal {
-                background: #ffaa00;
-                border: 1px solid #000000;
-                width: 16px;
-                margin: -8px 0;
-                border-radius: 8px;
-            }
-
-            QLabel {
-                color: #000000;
-                padding: 4px;
-            }
-        """)
-
-        self.filter_button_layout.setContentsMargins(15, 10, 15, 10)
-        self.brightness_widgets_layout.setContentsMargins(15, 0, 15, 0)
+        self.widthSlider.setFixedSize(150, self.widthSlider.sizeHint().height())
 
     def connectWidgets(self):
         self.undoButton.clicked.connect(self.undo)
@@ -352,67 +224,90 @@ class UX(QMainWindow):
         self.grayScaleButton.clicked.connect(self.imageToGrayScale)
         self.brightnessSlider.valueChanged.connect(self.brightnessSliderValueChanged)
 
+        self.colorButton.clicked.connect(self.showColorDialog)
 
     def fileMenu(self):
-        file_menu = self.menubar.addMenu('File')
+        fileMenu = self.menubar.addMenu('File')
 
-        open_action = QAction('Open\tCtrl+O', self)
-        open_action.triggered.connect(self.openFile)
-        file_menu.addAction(open_action)
+        openAction = QAction('Open\tCtrl+O', self)
+        openAction.triggered.connect(self.openFile)
+        fileMenu.addAction(openAction)
 
-        save_action = QAction('Save\tCtrl+S', self)
-        save_action.triggered.connect(self.saveFile)
-        file_menu.addAction(save_action)
+        saveAction = QAction('Save\tCtrl+S', self)
+        saveAction.triggered.connect(self.saveFile)
+        fileMenu.addAction(saveAction)
 
-        exit_action = QAction('Exit', self)
-        exit_action.triggered.connect(self.exitFile)
-        file_menu.addAction(exit_action)
+        exitAction = QAction('Exit', self)
+        exitAction.triggered.connect(self.exitFile)
+        fileMenu.addAction(exitAction)
 
     def viewMenu(self):
-        view_menu = self.menubar.addMenu('View')
+        viewMenu = self.menubar.addMenu('View')
 
-        showHideMenu_action = QAction('Show/Hide Menu', self)
-        showHideMenu_action.triggered.connect(self.showHideMenu)
-        view_menu.addAction(showHideMenu_action)
+        showHideImageOperationsMenuAction = QAction('Show/Hide Image Operations Menu', self)
+        showHideImageOperationsMenuAction.triggered.connect(self.showHideImageOperationsMenu)
+        viewMenu.addAction(showHideImageOperationsMenuAction)
+
+        showHidePaintingMenuAction = QAction('Show/Hide Painting Menu', self)
+        showHidePaintingMenuAction.triggered.connect(self.showHidePaintingMenu)
+        viewMenu.addAction(showHidePaintingMenuAction)
 
     def helpMenu(self):
-        help_menu = self.menubar.addMenu('Help')
+        helpMenu = self.menubar.addMenu('Help')
 
-        help_action = QAction('About', self)
-        help_action.triggered.connect(self.showAboutDialog)
-        help_menu.addAction(help_action)
+        helpAction = QAction('About', self)
+        helpAction.triggered.connect(showAboutDialog)
+        helpMenu.addAction(helpAction)
 
-    def showAboutDialog(self):
-        messageBox = QMessageBox()
-        messageBox.setWindowTitle("Help")
-        messageBox.setText(
-            "This app is an Image Editor and has been created by Căbulea Victor-Andrei and Cojocaru Rareș.")
-        messageBox.exec_()
-
-    def showHideMenu(self):
-        if self.hidden == 0:
+    def showHideImageOperationsMenu(self):
+        if self.hiddenImageOperations == 0:
             self.redoButton.hide()
             self.undoButton.hide()
             self.averageFilterButton.hide()
+            self.gaussianFilterButton.hide()
             self.filterComboBox.hide()
+            self.filterComboBoxLabel.hide()
             self.medianFilterButton.hide()
             self.grayScaleButton.hide()
             self.brightnessLabel.hide()
             self.brightnessSlider.hide()
 
-            self.hidden = 1
+            self.hiddenImageOperations = 1
 
-        elif self.hidden == 1:
+        elif self.hiddenImageOperations == 1:
             self.redoButton.setHidden(False)
             self.undoButton.setHidden(False)
             self.averageFilterButton.setHidden(False)
+            self.gaussianFilterButton.setHidden(False)
             self.filterComboBox.setHidden(False)
+            self.filterComboBoxLabel.setHidden(False)
             self.medianFilterButton.setHidden(False)
             self.grayScaleButton.setHidden(False)
             self.brightnessLabel.setHidden(False)
             self.brightnessSlider.setHidden(False)
 
-            self.hidden = 0
+            self.hiddenImageOperations = 0
+
+    def showHidePaintingMenu(self):
+        if self.hiddenPainting == 0:
+            self.brushButton.hide()
+            self.sprayButton.hide()
+            self.penButton.hide()
+            self.fillButton.hide()
+            self.rectangleButton.hide()
+            self.circleButton.hide()
+
+            self.hiddenPainting = 1
+
+        elif self.hiddenPainting == 1:
+            self.brushButton.setHidden(False)
+            self.sprayButton.setHidden(False)
+            self.penButton.setHidden(False)
+            self.fillButton.setHidden(False)
+            self.rectangleButton.setHidden(False)
+            self.circleButton.setHidden(False)
+
+            self.hiddenPainting = 0
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_O and event.modifiers() == Qt.ControlModifier:
@@ -425,24 +320,24 @@ class UX(QMainWindow):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
 
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open Image", "",
-                                                   "Image Files (*.jpg *.png *.bmp);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self, "Open Image", "",
+                                                  "Image Files (*.jpg *.png *.bmp);;All Files (*)", options=options)
 
-        if file_name:
-            image = cv2.cvtColor(cv2.imread(file_name), cv2.COLOR_RGB2BGR)
+        if fileName:
+            image = cv2.cvtColor(cv2.imread(fileName), cv2.COLOR_RGB2BGR)
 
-            label_width = self.image_label.width()
-            label_height = self.image_label.height()
+            labelWidth = self.canvas.width()
+            labelHeight = self.canvas.height()
 
-            aspect_ratio = image.shape[1] / image.shape[0]
-            new_width = label_width
-            new_height = int(label_width / aspect_ratio)
+            aspectRatio = image.shape[1] / image.shape[0]
+            newWidth = labelWidth
+            newHeight = int(labelWidth / aspectRatio)
 
-            if new_height > label_height:
-                new_height = label_height
-                new_width = int(label_height * aspect_ratio)
+            if newHeight > labelHeight:
+                newHeight = labelHeight
+                newWidth = int(labelHeight * aspectRatio)
 
-            image = cv2.resize(image, (new_width, new_height))
+            image = cv2.resize(image, (newWidth, newHeight))
 
             self.imageOperations.setCurrentImage(image)
 
@@ -451,26 +346,26 @@ class UX(QMainWindow):
     def saveFile(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_dialog = QFileDialog.getSaveFileName(self, "Save Image", "", "Images (*.png);;All Files (*)",
-                                                  options=options)
+        fileDialog = QFileDialog.getSaveFileName(self, "Save Image", "", "Images (*.png);;All Files (*)",
+                                                 options=options)
 
-        file_path, selected_filter = file_dialog
+        filePath, selected_filter = fileDialog
 
-        if file_path:
+        if filePath:
             qImage = self.imageOperations.cvMatToQImage()
 
-            qImage.save(file_path, "PNG", -1)
+            qImage.save(filePath, "PNG", -1)
 
     def exitFile(self):
         if len(self.imageOperations.getPreviousImages()) != 0:
-            message_box = QMessageBox()
-            message_box.setIcon(QMessageBox.Question)
-            message_box.setWindowTitle("Save and Exit")
-            message_box.setText("Do you want to save the file before exiting?")
-            message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            message_box.setDefaultButton(QMessageBox.Yes)
+            messageBox = QMessageBox()
+            messageBox.setIcon(QMessageBox.Question)
+            messageBox.setWindowTitle("Save and Exit")
+            messageBox.setText("Do you want to save the file before exiting?")
+            messageBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            messageBox.setDefaultButton(QMessageBox.Yes)
 
-            response = message_box.exec_()
+            response = messageBox.exec_()
 
             if response == QMessageBox.Yes:
                 self.saveFile()
@@ -539,8 +434,8 @@ class UX(QMainWindow):
 
     def updatePixmap(self):
         pixmap = QPixmap.fromImage(self.imageOperations.cvMatToQImage())
-        self.image_label.setPixmap(pixmap)
-        self.image_label.setAlignment(Qt.AlignTop)
+        self.canvas.setPixmap(pixmap)
+        self.canvas.setAlignment(Qt.AlignTop)
 
     def undo(self):
         if not self.redoButton.isEnabled():
@@ -560,7 +455,6 @@ class UX(QMainWindow):
         self.updatePixmap()
 
     def redo(self):
-        self.qUndoStack.push()
         if not self.undoButton.isEnabled():
             self.undoButton.setEnabled(True)
 
@@ -576,3 +470,9 @@ class UX(QMainWindow):
         self.imageOperations.getNextImages().pop()
 
         self.updatePixmap()
+
+    def showColorDialog(self):
+        color = QColorDialog.getColor()
+
+        if color.isValid():
+            self.colorLabel.setStyleSheet(f"background-color: {color.name()};")
