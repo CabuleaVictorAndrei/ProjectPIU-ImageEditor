@@ -296,6 +296,10 @@ class UX(QMainWindow):
             self.fillButton.hide()
             self.rectangleButton.hide()
             self.circleButton.hide()
+            self.colorLabel.hide()
+            self.colorButton.hide()
+            self.widthSliderLabel.hide()
+            self.widthSlider.hide()
 
             self.hiddenPainting = 1
 
@@ -306,6 +310,10 @@ class UX(QMainWindow):
             self.fillButton.setHidden(False)
             self.rectangleButton.setHidden(False)
             self.circleButton.setHidden(False)
+            self.colorLabel.setHidden(False)
+            self.colorButton.setHidden(False)
+            self.widthSliderLabel.setHidden(False)
+            self.widthSlider.setHidden(False)
 
             self.hiddenPainting = 0
 
