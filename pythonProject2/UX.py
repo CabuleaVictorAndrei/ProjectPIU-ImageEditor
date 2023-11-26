@@ -1,6 +1,6 @@
 import cv2
 from PyQt5.QtCore import Qt
-
+from penstate import PenState
 from canvas import Canvas
 from imageOperations import ImageOperations
 from PyQt5.QtWidgets import QMainWindow, QAction, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QPushButton, QMessageBox, \
@@ -177,9 +177,38 @@ class UX(QMainWindow):
         self.widthSettingLayout.addWidget(self.widthSlider)
         self.paintButtonsLayout.addLayout(self.widthSettingLayout)
 
+        self.brushButton.clicked.connect(self.onBrush)
+        self.sprayButton.clicked.connect(self.onSpray)
+        self.fillButton.clicked.connect(self.onFill)
+        self.penButton.clicked.connect(self.onPen)
+        self.rectangleButton.clicked.connect(self.onRectangle)
+        self.circleButton.clicked.connect(self.onCircle)
+        self.widthSlider.valueChanged.connect(self.setSize)
+
+    def onSpray(self):
+        self.canvas.penState = PenState.SPRAY
+
+    def onBrush(self):
+        self.canvas.penState = PenState.BRUSH
+
+    def onPen(self):
+        self.canvas.penState = PenState.NORMAL
+
+    def onFill(self):
+        self.canvas.penState = PenState.FILL
+
+    def setSize(self, value):
+        self.canvas.pen_width = value
+
+    def onRectangle(self):
+        self.canvas.penState = PenState.RECTANGLE
+
+    def onCircle(self):
+        self.canvas.penState = PenState.CIRCLE
+
     def setupPaintingButtons(self, button, imageName):
         button.setFixedWidth(150)
-        originalPixmap = QPixmap(f"D:/anul 4/eu/Proiect PIU - Image Editor/icons/{imageName}")
+        originalPixmap = QPixmap(f"../icons/{imageName}")
         desiredSize = (32, 32)
         pixmap = originalPixmap.scaled(*desiredSize)
         icon = QIcon(pixmap)
@@ -361,7 +390,7 @@ class UX(QMainWindow):
 
         if filePath:
             qImage = self.imageOperations.cvMatToQImage()
-
+            #p = QPixmap
             qImage.save(filePath, "PNG", -1)
 
     def exitFile(self):
@@ -484,3 +513,4 @@ class UX(QMainWindow):
 
         if color.isValid():
             self.colorLabel.setStyleSheet(f"background-color: {color.name()};")
+            self.canvas.set_pen_color(color)

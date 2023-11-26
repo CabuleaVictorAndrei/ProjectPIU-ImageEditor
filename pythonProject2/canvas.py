@@ -1,16 +1,12 @@
-import random
-
-from PyQt5.QtGui import QPixmap
-
 from penstate import PenState
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-
+import random
 
 class Canvas(QtWidgets.QLabel):
     def __init__(self):
         super().__init__()
-        pixmap = QPixmap()
+        pixmap = QtGui.QPixmap(1800, 1000)
         pixmap.fill(Qt.white)
         self.setPixmap(pixmap)
         self.penState = PenState.NORMAL
@@ -34,7 +30,7 @@ class Canvas(QtWidgets.QLabel):
         painter.setPen(p)
 
         for _ in range(self.pen_width * 3):
-            xo = round(random.gauss(0, 10))
+            xo = round( random.gauss(0, 10))
             yo = round(random.gauss(0, 10))
             painter.drawPoint(self.last_x + xo, self.last_y + yo)
 
@@ -56,10 +52,16 @@ class Canvas(QtWidgets.QLabel):
         p = painter.pen()
         initial_width = self.pen_width
 
-        # Distanța euclidiană este calculată folosind formula pentru distanța în planul cartezian între două puncte
-        # cu cat cursorul se misca mai repede cu atat grosimea pensulei va fi mai mica
-        dist = max(1, (self.last_x - e.x()) ** 2 + (self.last_y - e.y()) ** 2)
-        new_width = initial_width / (dist ** 0.4)
+        minDist = 1
+        maxDist = 50
+
+        minBrushSize = 1
+        maxBrushSize = initial_width
+
+        dist = ((self.last_x - e.x()) ** 2 + (self.last_y - e.y()) ** 2) ** 0.5
+        print(dist)
+        new_width = max(1, maxBrushSize - (
+                    minBrushSize + (dist - minDist) * ((maxBrushSize - minBrushSize) / (maxDist - minDist))))
 
         p.setWidth(int(new_width))
         p.setColor(self.pen_color)
